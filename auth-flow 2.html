@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sunrise Auth</title>
+<style>
+  :root{
+    --void:#07040d;
+    --deep:#1a0e33;
+    --violet:#6d28d9;
+    --bright:#a855f7;
+    --dawn:#f5d0fe;
+    --paper:#fdf4ff;
+    --ink:#0c0512;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#000;
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    overflow:hidden;
+  }
+
+  .phone{
+    position:relative;
+    width:390px;
+    height:780px;
+    max-width:96vw;
+    max-height:96vh;
+    border-radius:54px;
+    padding:14px;
+    background:linear-gradient(180deg,#2a2a2e,#0a0a0c);
+    box-shadow:0 40px 100px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.06);
+  }
+
+  .screen{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:42px;
+    overflow:hidden;
+    background:var(--void);
+  }
+
+  .notch{
+    position:absolute;
+    top:14px; left:50%; transform:translateX(-50%);
+    width:120px; height:30px;
+    background:#000;
+    border-radius:20px;
+    z-index:50;
+  }
+
+  /* --- Sun layer --- */
+  .sun-wrap{
+    position:absolute; inset:0;
+  }
+  .sun{
+    position:absolute;
+    left:50%;
+    bottom:-180px;
+    transform:translateX(-50%);
+    width:520px; height:520px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 42%,
+        var(--s4, #f5d0fe) 0%,
+        var(--s3, #a855f7) 30%,
+        var(--s2, #6d28d9) 58%,
+        var(--s1, #07040d) 80%);
+    filter:blur(2px);
+    transition: bottom 1.4s cubic-bezier(.22,1,.36,1), background 1.2s ease;
+  }
+  .sun::after{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:50%;
+    background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.05) 0deg 2deg, transparent 2deg 10deg);
+    opacity:.5;
+    animation: spin 40s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+
+  .stars{
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 20%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1.5px 1.5px at 70% 15%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 40% 35%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 85% 45%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 10% 55%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.5px 1.5px at 60% 60%, rgba(255,255,255,.4), transparent);
+    opacity:1;
+    transition:opacity 1s ease;
+  }
+
+  .content{
+    position:relative;
+    z-index:10;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    padding:70px 28px 40px;
+  }
+
+  .eyebrow{
+    color:rgba(255,255,255,.55);
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    text-align:center;
+  }
+
+  .title{
+    margin-top:auto;
+    text-align:center;
+    color:#fff;
+    font-size:34px;
+    font-weight:700;
+    letter-spacing:-.02em;
+    line-height:1.25;
+    text-shadow:0 2px 30px rgba(168,85,247,.5);
+  }
+  .subtitle{
+    margin-top:10px;
+    text-align:center;
+    color:rgba(255,255,255,.65);
+    font-size:15px;
+    line-height:1.6;
+  }
+
+  .spacer{flex:1}
+
+  /* --- Buttons --- */
+  .btn{
+    width:100%;
+    padding:18px 20px;
+    border-radius:20px;
+    border:none;
+    font-size:17px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:transform .15s ease, box-shadow .3s ease;
+  }
+  .btn:active{ transform:scale(.97); }
+
+  .btn-jumbo{
+    background:linear-gradient(135deg, var(--dawn), var(--bright) 55%, var(--violet));
+    color:var(--ink);
+    box-shadow:0 12px 40px rgba(168,85,247,.45), 0 0 0 1px rgba(255,255,255,.15) inset;
+    font-size:19px;
+    padding:20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .btn-jumbo::before{
+    content:"";
+    position:absolute; top:0; left:-60%;
+    width:40%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: sheen 3.2s ease-in-out infinite;
+  }
+  @keyframes sheen{
+    0%{ left:-60%; }
+    45%{ left:130%; }
+    100%{ left:130%; }
+  }
+
+  .btn-ghost{
+    background:rgba(255,255,255,.08);
+    color:#fff;
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;
+  }
+  .btn-ghost:hover{ background:rgba(255,255,255,.13); }
+
+  .btn-row{ display:flex; gap:10px; margin-top:12px; }
+  .btn-row .btn-ghost{ font-size:14px; padding:14px; }
+
+  .divider{
+    display:flex; align-items:center; gap:12px;
+    margin:22px 0 14px;
+    color:rgba(255,255,255,.4);
+    font-size:12px;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px; background:rgba(255,255,255,.15);
+  }
+
+  /* --- Form --- */
+  .form-area{ display:flex; flex-direction:column; gap:14px; margin-top:24px; }
+  .field-label{ color:rgba(255,255,255,.55); font-size:12px; letter-spacing:.05em; text-transform:uppercase; margin-bottom:6px; }
+  .field{
+    width:100%;
+    padding:16px 18px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06);
+    color:#fff;
+    font-size:16px;
+    outline:none;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .field::placeholder{ color:rgba(255,255,255,.35); }
+  .field:focus{
+    border-color:var(--bright);
+    box-shadow:0 0 0 4px rgba(168,85,247,.2);
+  }
+
+  .back{
+    position:absolute; top:70px; right:28px; z-index:20;
+    width:36px; height:36px;
+    border-radius:50%;
+    background:rgba(255,255,255,.1);
+    color:#fff;
+    border:none;
+    font-size:16px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* --- Screens management --- */
+  .view{
+    position:absolute; inset:0;
+    padding:0;
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(16px);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .view.active{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateY(0);
+  }
+
+  .badge-ok{
+    width:76px; height:76px;
+    margin:0 auto 22px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--dawn), var(--bright));
+    display:flex; align-items:center; justify-content:center;
+    font-size:34px;
+    box-shadow:0 10px 40px rgba(168,85,247,.5);
+    animation: pop .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{
+    0%{ transform:scale(0); opacity:0; }
+    70%{ transform:scale(1.1); }
+    100%{ transform:scale(1); opacity:1; }
+  }
+
+  .home-avatar{
+    width:88px; height:88px;
+    border-radius:50%;
+    margin:0 auto 18px;
+    background:linear-gradient(135deg, var(--dawn), var(--bright), var(--violet));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:30px; font-weight:700;
+    box-shadow:0 10px 40px rgba(168,85,247,.5);
+  }
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,.08);
+    color:rgba(255,255,255,.75);
+    font-size:12px;
+    padding:6px 12px;
+    border-radius:999px;
+    margin:0 auto;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background:#22c55e; }
+
+  .hint{ text-align:center; color:rgba(255,255,255,.45); font-size:13px; margin-top:16px; line-height:1.7; }
+  .hint b{ color:rgba(255,255,255,.8); }
+
+  .center-col{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="notch"></div>
+    <div class="sun-wrap"><div class="stars" id="stars"></div><div class="sun" id="sun"></div></div>
+
+    <!-- 1. Welcome -->
+    <div class="view active" id="view-welcome">
+      <div class="content">
+        <div class="eyebrow">مرحبًا بك</div>
+        <div class="title">شمسك تشرق<br>من جديد</div>
+        <div class="subtitle">سجّل دخولك وابدأ رحلتك معنا</div>
+        <div class="spacer"></div>
+        <button class="btn btn-jumbo" onclick="goTo('email')">Register / Login</button>
+        <div class="hint">بالمتابعة، أنت توافق على الشروط وسياسة الخصوصية</div>
+      </div>
+    </div>
+
+    <!-- 2. Email -->
+    <div class="view" id="view-email">
+      <button class="back" onclick="goTo('welcome')">‹</button>
+      <div class="content">
+        <div class="eyebrow" style="margin-top:20px">الخطوة الأولى</div>
+        <div class="title" style="font-size:26px; margin-top:14px;">أدخل بريدك<br>الإلكتروني</div>
+
+        <div class="form-area">
+          <div>
+            <div class="field-label">Email</div>
+            <input class="field" id="emailInput" type="email" placeholder="name@example.com">
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="btn btn-jumbo" onclick="sendLink()">إرسال رابط التوثيق</button>
+
+        <div class="divider">أو تابع عبر</div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goTo('home')">🐙 GitHub</button>
+          <button class="btn btn-ghost" onclick="goTo('home')">🔍 Google</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Check email -->
+    <div class="view" id="view-sent">
+      <div class="content">
+        <div class="spacer"></div>
+        <div class="center-col">
+          <div class="badge-ok">✉️</div>
+          <div class="title" style="font-size:24px;">تحقق من بريدك</div>
+          <div class="subtitle">أرسلنا رابط توثيق إلى<br><b id="sentEmail" style="color:#fff">—</b><br>افتحه لتأكيد حسابك</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="hint">هذي الصفحة بتتحدث تلقائيًا لما توثق الرابط<br>(لا تحتاج تسوي شي هنا)</div>
+      </div>
+    </div>
+
+    <!-- 4. Username / Password -->
+    <div class="view" id="view-profile">
+      <div class="content">
+        <div class="eyebrow" style="margin-top:20px">الخطوة الأخيرة</div>
+        <div class="title" style="font-size:26px; margin-top:14px;">أكمل حسابك</div>
+
+        <div class="form-area">
+          <div>
+            <div class="field-label">Username</div>
+            <input class="field" id="usernameInput" placeholder="اسم المستخدم">
+          </div>
+          <div>
+            <div class="field-label">Password</div>
+            <input class="field" id="passwordInput" type="password" placeholder="••••••••">
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="btn btn-jumbo" onclick="completeProfile()">إنشاء الحساب</button>
+      </div>
+    </div>
+
+    <!-- 5. Home / logged in -->
+    <div class="view" id="view-home">
+      <div class="content">
+        <div class="spacer"></div>
+        <div class="center-col">
+          <div class="home-avatar">☀️</div>
+          <div class="title" style="font-size:24px;">أهلًا بك مجددًا</div>
+          <div class="pill" style="margin-top:14px"><span class="dot"></span> الجلسة محفوظة تلقائيًا</div>
+          <div class="hint">في المرة القادمة، بيفتح التطبيق مباشرة على حسابك<br>بدون ما تسجل دخول من جديد</div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" onclick="location.reload()">تسجيل خروج (لإعادة العرض)</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ==== إعدادات Supabase ====
+  const SUPABASE_URL = "https://olqbxnppgpcxflnuowzu.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_r6pHno2nYyUiwMQzhci0Jg_quQI9aFS";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const stages = {
+    welcome: { y:'-180px', s1:'#07040d', s2:'#6d28d9', s3:'#a855f7', s4:'#f5d0fe', stars:1 },
+    email:   { y:'-60px',  s1:'#0e0620', s2:'#7c3aed', s3:'#c084fc', s4:'#fbcfe8', stars:.7 },
+    sent:    { y:'20px',   s1:'#150a2e', s2:'#8b5cf6', s3:'#d8b4fe', s4:'#fdf4ff', stars:.4 },
+    verified:{ y:'20px',   s1:'#150a2e', s2:'#8b5cf6', s3:'#d8b4fe', s4:'#fdf4ff', stars:.4 },
+    profile: { y:'120px',  s1:'#241041', s2:'#a855f7', s3:'#e9d5ff', s4:'#fefaff', stars:.2 },
+    home:    { y:'260px',  s1:'#3b0764', s2:'#c084fc', s3:'#f3e8ff', s4:'#ffffff', stars:0 },
+  };
+
+  function goTo(name){
+    if(name === 'verified'){
+      applyStage('verified');
+      setTimeout(()=>{ goTo('profile'); }, 500);
+      return;
+    }
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const view = document.getElementById('view-' + name);
+    if(view) view.classList.add('active');
+    applyStage(name);
+  }
+
+  function applyStage(name){
+    const s = stages[name] || stages.welcome;
+    const sun = document.getElementById('sun');
+    const stars = document.getElementById('stars');
+    sun.style.bottom = s.y;
+    sun.style.setProperty('--s1', s.s1);
+    sun.style.setProperty('--s2', s.s2);
+    sun.style.setProperty('--s3', s.s3);
+    sun.style.setProperty('--s4', s.s4);
+    stars.style.opacity = s.stars;
+  }
+
+  async function sendLink(){
+    const val = document.getElementById('emailInput').value.trim();
+    if(!val){ alert('اكتب إيميلك أول'); return; }
+
+    document.getElementById('sentEmail').textContent = val;
+    goTo('sent');
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: val,
+      options: { emailRedirectTo: window.location.href }
+    });
+
+    if(error){
+      alert('صار خطأ: ' + error.message);
+      goTo('email');
+    }
+  }
+
+  async function completeProfile(){
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+
+    if(!username || password.length < 6){
+      alert('اكتب اسم مستخدم وباسورد لا يقل عن 6 أحرف');
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+      data: { username: username }
+    });
+
+    if(error){
+      alert('صار خطأ: ' + error.message);
+      return;
+    }
+
+    goTo('home');
+  }
+
+  // لما يفتح المستخدم رابط التوثيق من الإيميل، يرجعه هنا وترسل Supabase حدث دخول
+  supabase.auth.onAuthStateChange((event, session) => {
+    if(event === 'SIGNED_IN' && session){
+      // لو الحساب ما زال بدون باسورد (أول مرة يوثق) نوديه لخطوة إكمال الملف
+      goTo('profile');
+    }
+  });
+
+  // عند فتح الصفحة: لو فيه جلسة محفوظة من قبل، ادخله على طول للرئيسية
+  (async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if(session){
+      goTo('home');
+    } else {
+      applyStage('welcome');
+    }
+  })();
+</script>
+
+</body>
+</html>
