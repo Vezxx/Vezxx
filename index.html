@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moonlight Auth</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="notch"></div>
+    <div class="top-controls">
+      <button class="toggle-btn" id="langBtn" onclick="toggleLang()">EN</button>
+      <button class="toggle-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
+    </div>
+    <button class="back" id="backBtn" onclick="goTo('welcome')">‹</button>
+
+    <div class="stars" id="stars"></div>
+    <div class="shooting-star"></div>
+
+    <div class="moon-wrap">
+      <div class="moon-core"></div>
+      <div class="moon-shadow"></div>
+    </div>
+
+    <svg class="mountains" viewBox="0 0 400 260" preserveAspectRatio="none" style="height:220px;">
+      <path d="M0,140 L30,100 L60,130 L100,70 L140,110 L180,60 L220,100 L260,50 L300,90 L340,70 L370,110 L400,90 L400,260 L0,260 Z" fill="#312a63" opacity="0.55"/>
+      <path d="M0,170 L20,110 L50,150 L90,60 L120,100 L150,40 L180,90 L210,55 L240,95 L270,45 L300,85 L330,60 L360,100 L400,80 L400,260 L0,260 Z" fill="#241d52" opacity="0.8"/>
+      <path d="M0,220 L15,60 L45,140 L75,90 L105,150 L135,100 L165,160 L205,120 L235,170 L275,130 L315,180 L355,150 L400,190 L400,260 L0,260 Z" fill="#130e30"/>
+    </svg>
+
+    <div class="lake"></div>
+
+    <div class="card">
+      <!-- Welcome -->
+      <div class="panel active" id="panel-welcome">
+        <div class="eyebrow" data-i18n="eyebrow_welcome">مرحبًا بك</div>
+        <div class="card-title" data-i18n="title_welcome">شمسك تشرق<br>من جديد</div>
+        <div class="card-subtitle" data-i18n="subtitle_welcome">سجّل دخولك وابدأ رحلتك معنا</div>
+        <button class="btn btn-jumbo" onclick="goTo('email')">Register / Login</button>
+        <div class="hint" data-i18n="hint_terms">بالمتابعة، أنت توافق على الشروط وسياسة الخصوصية</div>
+      </div>
+
+      <!-- Email -->
+      <div class="panel" id="panel-email">
+        <div class="eyebrow" data-i18n="eyebrow_step1">الخطوة الأولى</div>
+        <div class="card-title" style="font-size:20px" data-i18n="title_email">أدخل بريدك<br>الإلكتروني</div>
+        <div class="form-area">
+          <div>
+            <div class="field-label">Email</div>
+            <input class="field" id="emailInput" type="email" placeholder="name@example.com">
+          </div>
+        </div>
+        <button class="btn btn-jumbo" onclick="sendLink()" data-i18n="btn_send">إرسال رابط التوثيق</button>
+        <div class="divider" data-i18n="divider_or">أو تابع عبر</div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goTo('home')">🐙 GitHub</button>
+          <button class="btn btn-ghost" onclick="goTo('home')">🔍 Google</button>
+        </div>
+      </div>
+
+      <!-- Sent -->
+      <div class="panel" id="panel-sent">
+        <div class="center-col">
+          <div class="badge-ok">✉️</div>
+          <div class="card-title" style="font-size:19px" data-i18n="title_sent">تحقق من بريدك</div>
+          <div class="card-subtitle">
+            <span data-i18n="subtitle_sent_pre">أرسلنا رابط توثيق إلى</span><br>
+            <b id="sentEmail" style="color:var(--text-primary)">—</b><br>
+            <span data-i18n="subtitle_sent_post">افتحه لتأكيد حسابك</span>
+          </div>
+        </div>
+        <div class="hint" data-i18n="hint_sent">هذي الصفحة بتتحدث تلقائيًا لما توثق الرابط<br>(لا تحتاج تسوي شي هنا)</div>
+      </div>
+
+      <!-- Profile -->
+      <div class="panel" id="panel-profile">
+        <div class="eyebrow" data-i18n="eyebrow_step2">الخطوة الأخيرة</div>
+        <div class="card-title" style="font-size:20px" data-i18n="title_profile">أكمل حسابك</div>
+        <div class="form-area">
+          <div>
+            <div class="field-label">Username</div>
+            <input class="field" id="usernameInput" data-i18n-placeholder="ph_username" placeholder="اسم المستخدم">
+          </div>
+          <div>
+            <div class="field-label">Password</div>
+            <input class="field" id="passwordInput" type="password" placeholder="••••••••">
+          </div>
+        </div>
+        <button class="btn btn-jumbo" onclick="completeProfile()" data-i18n="btn_create">إنشاء الحساب</button>
+      </div>
+
+      <!-- Home -->
+      <div class="panel" id="panel-home">
+        <div class="center-col">
+          <div class="home-avatar">☾</div>
+          <div class="card-title" style="font-size:19px" data-i18n="title_home">أهلًا بك مجددًا</div>
+          <div class="pill"><span class="dot"></span> <span data-i18n="pill_session">الجلسة محفوظة تلقائيًا</span></div>
+        </div>
+        <div class="hint" data-i18n="hint_home">في المرة القادمة، بيفتح التطبيق مباشرة على حسابك<br>بدون ما تسجل دخول من جديد</div>
+        <button class="btn btn-ghost" style="margin-top:16px" onclick="location.reload()" data-i18n="btn_logout">تسجيل خروج (لإعادة العرض)</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()" onerror="console.error('Supabase SDK failed to load')"></script>
+
+</body>
+</html>
