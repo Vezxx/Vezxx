@@ -691,7 +691,6 @@ html[dir="ltr"] .back{ left:20px; }
           <button class="btn btn-jumbo" onclick="saveProfile()" data-i18n="btn_save_profile">حفظ البروفايل</button>
           <div class="hint" id="saveHint" style="min-height:16px"></div>
 
-          <button class="btn btn-ghost" style="margin-top:8px" onclick="shareProfileLink()" data-i18n="btn_share_profile">نسخ رابط بروفايلي</button>
           <button class="btn btn-ghost" style="margin-top:8px" onclick="location.reload()" data-i18n="btn_logout">تسجيل خروج (لإعادة العرض)</button>
         </div>
 
@@ -916,20 +915,6 @@ async function loadProfile(){
   }
 }
 
-async function shareProfileLink(){
-  const username = document.getElementById('usernameEditInput').value.trim();
-  const hint = document.getElementById('saveHint');
-  if(!username){ hint.textContent = t('alert_need_username'); return; }
-  const link = window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(username);
-  try{
-    await navigator.clipboard.writeText(link);
-    hint.textContent = t('link_copied');
-  }catch(err){
-    hint.textContent = link;
-  }
-  setTimeout(() => { hint.textContent = ''; }, 3500);
-}
-
 async function saveProfile(){
   if(!supabase || !currentUserId) return;
   const username = document.getElementById('usernameEditInput').value.trim();
@@ -970,7 +955,7 @@ async function loadFeed(){
 
   const { data, error } = await supabase
     .from('posts')
-    .select('id, content, image_url, created_at, profiles(username, avatar)')
+    .select('id, content, image_url, created_at, profiles!user_id(username, avatar)')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -1123,7 +1108,6 @@ const translations = {
     btn_logout:"تسجيل خروج (لإعادة العرض)", ph_username:"اسم المستخدم",
     label_bio:"نبذة عنك", ph_bio:"اكتب نبذة قصيرة...", btn_save_profile:"حفظ البروفايل", saved_ok:"تم الحفظ ✓",
     btn_back_app:"رجوع للتطبيق", public_not_found:"ما فيه مستخدم بهذا الاسم",
-    btn_share_profile:"نسخ رابط بروفايلي", link_copied:"تم نسخ الرابط ✓",
     tab_profile:"البروفايل", tab_feed:"المنشورات", ph_post:"وش بخاطرك؟", btn_post:"نشر",
     btn_follow:"متابعة", btn_following:"متابَع ✓", btn_add_image:"إضافة صورة",
     loading:"جاري التحميل...", no_posts:"ولا منشور بعد، كن أول من ينشر!",
@@ -1148,7 +1132,6 @@ const translations = {
     btn_logout:"Sign out (replay demo)", ph_username:"Username",
     label_bio:"About you", ph_bio:"Write a short bio...", btn_save_profile:"Save profile", saved_ok:"Saved ✓",
     btn_back_app:"Back to app", public_not_found:"No user with this name",
-    btn_share_profile:"Copy my profile link", link_copied:"Link copied ✓",
     tab_profile:"Profile", tab_feed:"Posts", ph_post:"What's on your mind?", btn_post:"Post",
     btn_follow:"Follow", btn_following:"Following ✓", btn_add_image:"Add image",
     loading:"Loading...", no_posts:"No posts yet, be the first!",
