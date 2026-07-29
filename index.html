@@ -45,33 +45,23 @@ body{
 
 .phone{
   position:relative;
-  width:420px;
-  height:840px;
-  max-width:97vw;
-  max-height:97vh;
-  border-radius:54px;
-  padding:14px;
-  background:linear-gradient(180deg,#2a2a2e,#0a0a0c);
-  box-shadow:0 40px 100px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.06);
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  padding:0;
+  background:none;
+  box-shadow:none;
 }
 
 .screen{
   position:relative;
   width:100%;
   height:100%;
-  border-radius:42px;
   overflow:hidden;
   background:#000000;
 }
 
-.notch{
-  position:absolute;
-  top:14px; left:50%; transform:translateX(-50%);
-  width:120px; height:30px;
-  background:#000;
-  border-radius:20px;
-  z-index:80;
-}
+.notch{ display:none; }
 
 .top-controls{
   position:absolute;
@@ -1021,7 +1011,20 @@ async function loadFeed(){
     });
   }
 
-  list.innerHTML = data.map(post => {
+  const reportCountByPost = {};
+  const reportedByMe = {};
+  if(postIds.length){
+    const { data: reportsData } = await supabase.from('reports').select('post_id, reporter_id').in('post_id', postIds);
+    (reportsData || []).forEach(r => {
+      reportCountByPost[r.post_id] = (reportCountByPost[r.post_id] || 0) + 1;
+      if(r.reporter_id === currentUserId) reportedByMe[r.post_id] = true;
+    });
+  }
+
+  const visiblePosts = data.filter(post => post.user_id === currentUserId || (reportCountByPost[post.id] || 0) < 3);
+  if(visiblePosts.length === 0){ list.innerHTML = '<div class="posts-empty">' + t('no_posts') + '</div>'; return; }
+
+  list.innerHTML = visiblePosts.map(post => {
     const prof = post.profiles || {};
     const uname = (prof.username || 'مستخدم').replace(/'/g, '');
     const avatar = prof.avatar && prof.avatar.startsWith('http')
@@ -1032,20 +1035,31 @@ async function loadFeed(){
     const postImg = post.image_url ? '<img class="post-image" src="' + post.image_url + '">' : '';
     const like = likesByPost[post.id] || { count: 0, likedByMe: false };
     const isMine = post.user_id === currentUserId;
-    const ownerMenu = isMine ? (
-      '<div class="post-menu-wrap">' +
+    let menu;
+    if(isMine){
+      menu = '<div class="post-menu-wrap">' +
         '<button class="post-menu-btn" onclick="togglePostMenu(event, \'' + post.id + '\')">⋮</button>' +
         '<div class="post-menu" id="menu-' + post.id + '">' +
           '<button onclick="startEditPost(\'' + post.id + '\')" data-i18n="menu_edit">تعديل</button>' +
           '<button onclick="deletePost(\'' + post.id + '\')" class="danger" data-i18n="menu_delete">حذف</button>' +
         '</div>' +
-      '</div>'
-    ) : '';
+      '</div>';
+    }else{
+      const already = reportedByMe[post.id];
+      menu = '<div class="post-menu-wrap">' +
+        '<button class="post-menu-btn" onclick="togglePostMenu(event, \'' + post.id + '\')">⋮</button>' +
+        '<div class="post-menu" id="menu-' + post.id + '">' +
+          (already
+            ? '<button disabled data-i18n="menu_reported">تم الإبلاغ ✓</button>'
+            : '<button onclick="reportPost(\'' + post.id + '\')" class="danger" data-i18n="menu_report">🚩 إبلاغ</button>') +
+        '</div>' +
+      '</div>';
+    }
     return '<div class="post-card" id="post-' + post.id + '">' +
       '<div class="post-head">' +
         '<span style="cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="goToUserProfile(\'' + uname + '\')">' + avatar +
         '<span class="post-username">@' + uname + '</span></span>' +
-        '<span class="post-time">' + when + '</span>' + ownerMenu +
+        '<span class="post-time">' + when + '</span>' + menu +
       '</div>' +
       '<div class="post-content" id="content-' + post.id + '">' + safeContent + '</div>' + postImg +
       '<button class="like-btn' + (like.likedByMe ? ' liked' : '') + '" onclick="toggleLike(\'' + post.id + '\', this)">' +
@@ -1092,6 +1106,15 @@ async function deletePost(postId){
   if(error){ alert(t('alert_error') + error.message); return; }
   const card = document.getElementById('post-' + postId);
   if(card) card.remove();
+}
+
+async function reportPost(postId){
+  document.getElementById('menu-' + postId).classList.remove('show');
+  if(!currentUserId) return;
+  const { error } = await supabase.from('reports').insert({ post_id: postId, reporter_id: currentUserId });
+  if(error && !error.message.includes('duplicate')){ alert(t('alert_error') + error.message); return; }
+  alert(t('report_thanks'));
+  loadFeed();
 }
 
 async function toggleLike(postId, btnEl){
@@ -1161,7 +1184,10 @@ async function submitPost(){
   }
 
   const { error } = await supabase.from('posts').insert({ user_id: currentUserId, content: content || '', image_url: imageUrl });
-  if(error){ hint.textContent = t('alert_error') + error.message; return; }
+  if(error){
+    hint.textContent = error.message.includes('ألفاظ غير لائقة') ? error.message : t('alert_error') + error.message;
+    return;
+  }
 
   input.value = '';
   selectedPostImage = null;
@@ -1211,7 +1237,8 @@ const translations = {
     btn_follow:"متابعة", btn_following:"متابَع ✓", btn_add_image:"إضافة صورة",
     loading:"جاري التحميل...", no_posts:"ولا منشور بعد، كن أول من ينشر!",
     menu_edit:"تعديل", menu_delete:"حذف", menu_save:"حفظ", menu_cancel:"إلغاء",
-    confirm_delete:"تحذف هذا المنشور؟",
+    confirm_delete:"تحذف هذا المنشور؟", menu_report:"🚩 إبلاغ", menu_reported:"تم الإبلاغ ✓",
+    report_thanks:"تم الإبلاغ، شكرًا لك",
     time_now:"الآن", time_min:"د", time_hour:"س", time_day:"ي",
     alert_need_username:"اكتب اسم المستخدم",
     alert_need_email:"اكتب إيميلك أول", alert_error:"صار خطأ: ",
@@ -1237,7 +1264,8 @@ const translations = {
     btn_follow:"Follow", btn_following:"Following ✓", btn_add_image:"Add image",
     loading:"Loading...", no_posts:"No posts yet, be the first!",
     menu_edit:"Edit", menu_delete:"Delete", menu_save:"Save", menu_cancel:"Cancel",
-    confirm_delete:"Delete this post?",
+    confirm_delete:"Delete this post?", menu_report:"🚩 Report", menu_reported:"Reported ✓",
+    report_thanks:"Reported, thank you",
     time_now:"now", time_min:"m", time_hour:"h", time_day:"d",
     alert_need_username:"Enter a username",
     alert_need_email:"Enter your email first", alert_error:"Something went wrong: ",
